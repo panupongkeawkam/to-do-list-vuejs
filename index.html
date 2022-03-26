@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;700&display=swap" rel="stylesheet">
+  <link href="./css/all.css" rel="stylesheet" />
+  <link href="./css/bulma.css" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="icons/web-icon.png">
+
+  <script src="./js/all.js"></script>
+  <script src="./js/vue.js"></script>
+
+  <title>TO DO LIST</title>
+</head>
+
+<style>
+  body {
+    font-family: 'Mali', cursive;
+  }
+</style>
+
+<body>
+  <section id="app" style="background-color: hsl(42, 56%, 97%); background-image: url('svgs/jigsaw-pattern.svg')">
+
+    <!-- Header -->
+    <div class="pb-4 pt-2 is-flex is-align-items-center box"
+      style="border-radius: 0px !important; background: hsl(37, 48%, 84%)">
+      <span class="is-size-3 has-text-weight-bold">TO DO LIST</span>
+    </div>
+
+    <div class="container mt-5">
+
+      <!-- State -->
+      <div class="columns">
+        <div class="column is-8 is-offset-2 p-0">
+          <nav class="level">
+            <div class="level-item has-text-centered box mt-5" style="background: #87AAAA">
+              <div>
+                <p class="heading has-text-white">Completed Tasks</p>
+                <p class="title has-text-white">{{ numCompleted }}</p>
+              </div>
+            </div>
+            <div class="level-item has-text-centered box mx-2 mt-5" style="background: #87AAAA">
+              <div>
+                <p class="heading has-text-white">Incomplete Tasks
+                </p>
+                <p class="title has-text-white">{{ numIncompleted }}</p>
+              </div>
+            </div>
+            <div class="level-item has-text-centered box" style="background: #87AAAA">
+              <div>
+                <p class="heading has-text-white">Flagged Tasks</p>
+                <p class="title has-text-white">{{ numFlagged }}</p>
+              </div>
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      <!-- List, task, filter, sort elements  -->
+      <div class="columns box has-background-white-bis mb-5 is-flex is-flex-direction-column" v-for="list in todoLists">
+
+        <div class="columns pt-5 px-4">
+          <div class="column is-10">
+            <p class="title is-size-2 has-text-grey-dark">{{ list.name }}</p>
+          </div>
+          <div class="column is-2 is-flex is-justify-content-end">
+            <span class="icon is-large mr-5 is-clickable" @click="editList(list)">
+              <i class="fas fa-edit fa-2x"></i>
+            </span>
+            <span class="icon is-large is-clickable" @click="deleteList(list)">
+              <i class="fas fa-trash-alt fa-2x"></i>
+            </span>
+          </div>
+        </div>
+
+        <div class="columns">
+          <div class="column is-8" style="height: 360px; overflow-y: auto">
+
+            <div class="columns is-flex is-justify-content-center is-align-items-center" style="height: 100%"
+              v-if="tasksToShow(list).length === 0">
+              <p class="is-size-3 has-text-weight-bold has-text-grey-light">No Task</p>
+            </div>
+
+            <div class="box level py-3 my-2" v-for="task in tasksToShow(list)"
+              v-if="!(list.isHideComplete && task.isComplete) && !(list.isFlagOnly && !task.isFlag)"
+              :key="'task' + task.id">
+              <div class="control">
+                <label class="checkbox"
+                  :style="{textDecoration: task.isComplete ? 'line-through' : 'none', color: task.color}">
+                  <input type="checkbox" v-model="task.isComplete">
+                  {{ task.name }}{{ task.dueDate ? ` (Due by ${task.dueDate})` : ""}}
+                </label>
+                <span class="icon is-small ml-1" v-if="task.isFlag">
+                  <i class="fas fa-flag"></i>
+                </span>
+              </div>
+              <div class="level-right ml-5">
+                <span class="icon is-small is-clickable" @click="editTask(task)">
+                  <i class="fas fa-edit"></i>
+                </span>
+                <span class="icon is-small ml-5 is-clickable" @click="deleteTask(task)">
+                  <i class="fas fa-trash-alt"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="column is-4">
+
+            <div class="card mb-3">
+              <header class="card-header has-background-grey-light">
+                <p class="card-header-title has-text-white">Filter</p>
+                <p class="card-header-icon" style="cursor: initial">
+                  <span class="card-header-icon icon has-text-white" style="cursor: initial">
+                    <i class="fas fa-filter"></i>
+                  </span>
+                </p>
+              </header>
+              <section class="card-content">
+                <div class="content">
+                  <div class="control">
+                    <label class="checkbox">
+                      <input type="checkbox" v-model="list.isHideComplete">
+                      Hide completed tasks
+                    </label>
+                  </div>
+                  <div class="control">
+                    <label class="checkbox">
+                      <input type="checkbox" v-model="list.isFlagOnly">
+                      Show only flagged tasks
+                    </label>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="card">
+              <header class="card-header has-background-grey-light">
+                <p class="card-header-title has-text-white">Sort</p>
+                <p class="card-header-icon" style="cursor: initial">
+                  <span class="card-header-icon icon has-text-white" style="cursor: initial">
+                    <i class="fas fa-sort"></i>
+                  </span>
+                </p>
+              </header>
+              <section class="card-content">
+                <div class="content">
+                  <div class="control">
+                    <label class="radio">
+                      <input type="radio" v-model="list.sortBy" value="alphabet">
+                      Sort alphabetically
+                    </label>
+                    <br>
+                    <label class="radio">
+                      <input type="radio" v-model="list.sortBy" value="incompleteFirst">
+                      Sort incomplete tasks
+                    </label>
+                    <br>
+                    <label class="radio">
+                      <input type="radio" v-model="list.sortBy" value="flaggedFirst">
+                      Sort flagged task first
+                    </label>
+                    <br>
+                    <label class="radio">
+                      <input type="radio" v-model="list.sortBy" value="dueDate">
+                      Sort by due date (ascending)
+                    </label>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Add List -->
+      <div class="columns is-flex is-flex-direction-column is-align-items-center mt-5 pt-5" style="height: 300px">
+        <span class="icon has-text-success mb-4 is-clickable" @click="showAddList = true">
+          <i class="fas fa-plus-circle fa-3x"></i>
+        </span>
+        <p class="is-size-4 has-text-weight-bold has-text-grey-light">Add New To Do List</p>
+      </div>
+
+      <!-- Add Task -->
+      <div class="columns is-flex is-flex-direction-column mb-1 mx-4 box has-text-white"
+        style="position: fixed; bottom: .75em; background: hsl(41, 80%, 12%, 95%); width: 65%">
+
+        <div class="columns px-4">
+          <p class="subtitle mb-2 mt-4 has-text-weight-bold has-text-grey-lighter">Add New Task</p>
+        </div>
+
+        <div class="columns px-0">
+          <div class="column is-4">
+            <div class="field">
+              <div class="control">
+                <input class="input" type="text" v-model="newTaskName" placeholder="Task Name" />
+              </div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="select">
+              <select v-model="newInListId">
+                <option value="" disabled selected>-- Select List --</option>
+                <option v-for="list in todoLists" :value="list.id">{{ list.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="column">
+            <div class="control">
+              <input class="input" type="date" v-model="newDueDate">
+            </div>
+          </div>
+          <div class="column is-1 is-flex is-align-items-center">
+            <div class="control">
+              <label class="checkbox">
+                <input type="checkbox" v-model="newIsFlag">
+                Flag
+              </label>
+            </div>
+          </div>
+          <div class="column is-flex is-align-items-center">
+            <a class="button is-white" style="cursor: initial">
+              <figure class="image is-24x24 mx-1 is-clickable" @click="newColor = 'black'">
+                <img :src="newColor === 'black' ? './svgs/solid/check-circle.svg' : './svgs/solid/circle.svg'">
+              </figure>
+              <figure class="image is-24x24 mx-1 is-clickable" @click="newColor = 'red'">
+                <img :src="newColor === 'red' ? './svgs/solid/red-check-circle.svg' : './svgs/solid/red-circle.svg'">
+              </figure>
+              <figure class="image is-24x24 mx-1 is-clickable" @click="newColor = 'green'">
+                <img
+                  :src="newColor === 'green' ? './svgs/solid/green-check-circle.svg' : './svgs/solid/green-circle.svg'">
+              </figure>
+            </a>
+          </div>
+          <div class="column is-4">
+            <div class="control">
+              <a class="button is-info px-5" @click="addTask">Add</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="modal" :class="{'is-active': showEditTask}">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title has-text-weight-bold has-text-grey">Edit Task</p>
+          <button class="delete" aria-label="close" @click="showEditTask = false"></button>
+        </header>
+        <section class="modal-card-body">
+          <div class="columns">
+            <div class="column is-8">
+              <input class="input" type="text" v-model="editTaskName" placeholder="Task Name">
+            </div>
+            <div class="column is-4">
+              <div class="select">
+                <select v-model="editTaskInListId">
+                  <option value="" disabled selected>-- Select List --</option>
+                  <option v-for="list in todoLists" :value="list.id">{{ list.name }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="columns">
+            <div class="column is-4">
+              <div class="control">
+                <input class="input" type="date" v-model="editTaskDueDate">
+              </div>
+            </div>
+            <div class="column is-2 is-flex is-align-items-center is-justify-content-center">
+              <div class="control">
+                <label class="checkbox">
+                  <input type="checkbox" v-model="editTaskIsFlag">
+                  Flag
+                </label>
+              </div>
+            </div>
+            <div class="column is-flex is-align-items-center">
+              <figure class="image is-24x24 mx-1 is-clickable" @click="editTaskColor = 'black'">
+                <img :src="editTaskColor === 'black' ? './svgs/solid/check-circle.svg' : './svgs/solid/circle.svg'">
+              </figure>
+              <figure class="image is-24x24 mx-1 is-clickable" @click="editTaskColor = 'red'">
+                <img
+                  :src="editTaskColor === 'red' ? './svgs/solid/red-check-circle.svg' : './svgs/solid/red-circle.svg'">
+              </figure>
+              <figure class="image is-24x24 mx-1 is-clickable" @click="editTaskColor = 'green'">
+                <img
+                  :src="editTaskColor === 'green' ? './svgs/solid/green-check-circle.svg' : './svgs/solid/green-circle.svg'">
+              </figure>
+            </div>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button is-success" @click="saveEditTask">Save</button>
+          <button class="button" @click="showEditTask = false">Cancel</button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="modal" :class="{'is-active': showDeleteTask}">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title has-text-weight-bold has-text-grey">Are you sure you want to delete "{{
+            deleteTaskName }}"?</p>
+          <button class="delete" aria-label="close" @click="showDeleteTask = false"></button>
+        </header>
+        <footer class="modal-card-foot">
+          <button class="button is-danger" @click="confirmDeleteTask">Confirm</button>
+          <button class="button" @click="showDeleteTask = false">Cancel</button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="modal" :class="{'is-active': showAddList}">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title has-text-weight-bold has-text-grey">Add New List</p>
+          <button class="delete" aria-label="close" @click="showAddList = false; newListName = ''"></button>
+        </header>
+        <section class="modal-card-body">
+          <div class="columns">
+            <div class="column">
+              <input class="input" type="text" placeholder="New List Name" v-model="newListName">
+            </div>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button is-success" @click="addList">Add</button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="modal" :class="{'is-active': showEditList}">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title has-text-weight-bold has-text-grey">Edit List</p>
+          <button class="delete" aria-label="close" @click="showEditList = false"></button>
+        </header>
+        <section class="modal-card-body">
+          <div class="columns">
+            <div class="column">
+              <input class="input" type="text" placeholder="New List Name" v-model="editListName">
+            </div>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button is-success" @click="saveEditList">Save</button>
+        </footer>
+      </div>
+    </div>
+
+    <div class="modal" :class="{'is-active': showDeleteList}">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title has-text-weight-bold has-text-grey">Are you sure you want to delete "{{
+            deleteListName }}"?</p>
+          <button class="delete" aria-label="close" @click="showDeleteList = false"></button>
+        </header>
+        <footer class="modal-card-foot">
+          <button class="button is-danger" @click="confirmDeleteList">Confirm</button>
+          <button class="button" @click="showDeleteList = false">Cancel</button>
+        </footer>
+      </div>
+    </div>
+
+  </section>
+
+  <script>
+    var app = new Vue({
+      el: "#app",
+      data: {
+        todoLists: [],
+        tasks: [],
+        taskIdCounter: 0,
+        newInListId: '',
+        newTaskName: '',
+        newInListId: '',
+        newDueDate: '',
+        newIsFlag: false,
+        newColor: "black",
+        showEditTask: false,
+        editTaskId: '',
+        editTaskName: '',
+        editTaskInListId: '',
+        editTaskDueDate: '',
+        editTaskIsFlag: '',
+        editTaskColor: '',
+        showDeleteTask: false,
+        deleteTaskName: '',
+        showAddList: false,
+        listIdCounter: 0,
+        newListName: '',
+        showEditList: false,
+        editListId: '',
+        editListName: '',
+        showDeleteList: false,
+        deleteListName: "",
+      },
+      methods: {
+        addTask() {
+          this.newTaskName = this.newTaskName.trim()
+          if (this.newTaskName === '') {
+            return alert("Please fill a empty value.")
+          } else if (this.newInListId === '') {
+            return alert("Please select a list name.")
+          }
+
+          this.taskIdCounter++
+          var newTask = {
+            id: this.taskIdCounter,
+            name: this.newTaskName,
+            isComplete: false,
+            isFlag: this.newIsFlag,
+            listId: this.newInListId,
+            dueDate: this.newDueDate,
+            color: this.newColor
+          }
+
+          this.tasks.push(newTask)
+
+          this.newTaskName = ''
+          this.newInListId = ''
+          this.newDueDate = ''
+          this.newIsFlag = false
+          this.newColor = 'black'
+        },
+        editTask(task) {
+          this.showEditTask = true
+
+          this.editTaskId = task.id
+          this.editTaskName = task.name
+          this.editTaskInListId = task.listId
+          this.editTaskDueDate = task.dueDate
+          this.editTaskIsFlag = task.isFlag
+          this.editTaskColor = task.color
+        },
+        saveEditTask() {
+          this.editTaskName = this.editTaskName.trim()
+          if (this.editTaskName === '') {
+            alert("Please fill a empty value.")
+            return
+          }
+
+          var index
+          this.tasks.forEach((val, i) => {
+            if (val.id === this.editTaskId) {
+              index = i
+              return
+            }
+          })
+
+          this.tasks[index].name = this.editTaskName
+          this.tasks[index].isFlag = this.editTaskIsFlag
+          this.tasks[index].listId = this.editTaskInListId
+          this.tasks[index].dueDate = this.editTaskDueDate
+          this.tasks[index].color = this.editTaskColor
+
+          this.showEditTask = false
+        },
+        deleteTask(task) {
+          this.showDeleteTask = true
+
+          this.deleteTaskId = task.id
+          this.deleteTaskName = task.name
+        },
+        confirmDeleteTask() {
+          var index
+          this.tasks.forEach((val, i) => {
+            if (val.id === this.deleteTaskId) {
+              index = i
+              return
+            }
+          })
+
+          this.tasks.splice(index, 1)
+          this.showDeleteTask = false
+        },
+        alphabetSort(a, b) {
+          if (a.name < b.name) {
+            return -1
+          } else if (a.name > b.name) {
+            return 1
+          } else {
+            return 0
+          }
+        },
+        incompleteFirstSort(a, b) {
+          if (!a.isComplete && b.isComplete) {
+            return -1
+          } else if (a.isComplete && !b.isComplete) {
+            return 1
+          } else {
+            return 0
+          }
+        },
+        flaggedFirstSort(a, b) {
+          if (a.isFlag && !b.isFlag) {
+            return -1
+          } else if (!a.isFlag && b.isFlag) {
+            return 1
+          } else {
+            return 0
+          }
+        },
+        dueDateSort(a, b) {
+          if (a.dueDate === '') {
+            return 1
+          } else if (b.dueDate === '') {
+            return -1
+          } else if (a.dueDate < b.dueDate) {
+            return -1
+          } else if (a.dueDate > b.dueDate) {
+            return 1
+          } else {
+            return 0
+          }
+        },
+        addList() {
+          this.newListName = this.newListName.trim()
+          if (this.newListName === '') {
+            return alert("Please fill a empty value.")
+          }
+
+          this.listIdCounter++
+          var newList = {
+            id: this.listIdCounter,
+            name: this.newListName,
+            isHideComplete: false,
+            isFlagOnly: false,
+            sortBy: "alphabet"
+          }
+
+          this.todoLists.push(newList)
+
+          this.newListName = ''
+          this.showAddList = false
+        },
+        editList(list) {
+          this.showEditList = true
+
+          this.editListId = list.id
+          this.editListName = list.name
+        },
+        saveEditList() {
+          this.editListName = this.editListName.trim()
+          if (this.editListName === '') {
+            return alert("Please fill a empty value.")
+          }
+
+          var index
+          this.todoLists.forEach((val, i) => {
+            if (val.id === this.editListId) {
+              index = i
+              return
+            }
+          })
+
+          this.todoLists[index].name = this.editListName
+
+          this.showEditList = false
+        },
+        deleteList(list) {
+          this.showDeleteList = true
+
+          this.deleteListId = list.id
+          this.deleteListName = list.name
+        },
+        confirmDeleteList() {
+          var index
+          this.todoLists.forEach((val, i) => {
+            if (val.id === this.deleteListId) {
+              index = i
+              return
+            }
+          })
+
+          this.tasks = this.tasks.filter(val => val.listId !== this.deleteListId)
+          this.todoLists.splice(index, 1)
+          this.showDeleteList = false
+        },
+        tasksToShow(list) {
+          var tasks = this.tasks.filter(val => val.listId === list.id)
+          if (list.sortBy === "alphabet") {
+            return tasks.sort(this.alphabetSort)
+          } else if (list.sortBy === "incompleteFirst") {
+            return tasks.sort(this.alphabetSort).sort(this.incompleteFirstSort)
+          } else if (list.sortBy === "flaggedFirst") {
+            return tasks.sort(this.alphabetSort).sort(this.flaggedFirstSort)
+          } else if (list.sortBy === "dueDate") {
+            return tasks.sort(this.alphabetSort).sort(this.dueDateSort)
+          }
+        }
+      },
+      computed: {
+        numCompleted() {
+          return this.tasks.filter(val => val.isComplete).length
+        },
+        numIncompleted() {
+          return this.tasks.length - this.numCompleted
+        },
+        numFlagged() {
+          return this.tasks.filter(val => val.isFlag).length
+        }
+      },
+      created() {
+        this.tasks = JSON.parse(localStorage.getItem("tasks"))
+        this.todoLists = JSON.parse(localStorage.getItem("todoLists"))
+        this.taskIdCounter = this.tasks.length === 0 ? 0 : this.tasks[this.tasks.length - 1].id
+        this.listIdCounter = this.todoLists.length === 0 ? 0 : this.todoLists[this.todoLists.length - 1].id
+      },
+      beforeDestroy() {
+        localStorage.setItem("tasks", JSON.stringify(this.tasks))
+        localStorage.setItem("todoLists", JSON.stringify(this.todoLists))
+      }
+    });
+
+    window.onbeforeunload = () => {
+      app.$destroy()
+    }
+  </script>
+
+</body>
+
+</html>
