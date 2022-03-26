@@ -620,14 +620,18 @@
         }
       },
       created() {
-        this.tasks = JSON.parse(localStorage.getItem("tasks"))
         this.todoLists = JSON.parse(localStorage.getItem("todoLists"))
+        this.tasks = JSON.parse(localStorage.getItem("tasks"))
+        if (localStorage.getItem("todoLists") === null || localStorage.getItem("tasks") === null) {
+          this.todoLists = []
+          this.tasks = []
+        }
         this.taskIdCounter = this.tasks.length === 0 ? 0 : this.tasks[this.tasks.length - 1].id
         this.listIdCounter = this.todoLists.length === 0 ? 0 : this.todoLists[this.todoLists.length - 1].id
       },
       beforeDestroy() {
-        localStorage.setItem("tasks", JSON.stringify(this.tasks) === null ? [] : JSON.stringify(this.tasks))
-        localStorage.setItem("todoLists", JSON.stringify(this.todoLists) ? [] : JSON.stringify(this.todoLists))
+        localStorage.setItem("tasks", JSON.stringify(this.tasks))
+        localStorage.setItem("todoLists", JSON.stringify(this.todoLists))
       }
     });
 
