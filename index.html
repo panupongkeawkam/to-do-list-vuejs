@@ -626,8 +626,8 @@
         this.listIdCounter = this.todoLists.length === 0 ? 0 : this.todoLists[this.todoLists.length - 1].id
       },
       beforeDestroy() {
-        localStorage.setItem("tasks", JSON.stringify(this.tasks))
-        localStorage.setItem("todoLists", JSON.stringify(this.todoLists))
+        localStorage.setItem("tasks", JSON.stringify(this.tasks) === null ? [] : JSON.stringify(this.tasks))
+        localStorage.setItem("todoLists", JSON.stringify(this.todoLists) ? [] : JSON.stringify(this.todoLists))
       }
     });
 
